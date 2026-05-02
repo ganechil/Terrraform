@@ -2,10 +2,11 @@
 #config MS Azure Providers
 provider "azurerm" {
   //configure terraform app registeration in azure 
-  subscription_id = "098ae160-379b-4c33-93c3-c749b638d510"
-  client_id       = "f4625e31-02dc-4cf5-bea1-bd0c1ae40a96"
-  client_secret   = " terraform app registered secret key"
-  tenant_id       = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+  subscription_id                        = "098ae160-379b-4c33-93c3-c749b638d510"
+  client_id                              = "f4625e31-02dc-4cf5-bea1-bd0c1ae40a96"
+  client_secret                          = "terraform app registeration secret key"
+  tenant_id                              = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+  prevent_deletion_if_contains_resources = true
   features {}
 }
 
@@ -64,6 +65,7 @@ resource "azurerm_mssql_firewall_rule" "SQLgcFirewallRule1" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "255.255.255.255"
 }
+
 
 //https://www.youtube.com/watch?v=gMFLh8QFRZg
 //Key vault
