@@ -51,3 +51,11 @@ resource "azurerm_mssql_server" "azsqlpaasetldbsrvr" {
   name                = "etldb"
   server_id           = azurerm_mssql_server.azsqlpaasetldbsrvr.id
   }
+
+  //create firewall rule for azure sql server
+  resource "azurerm_mssql_firewall_rule" "SQLgcFirewallRule1" {
+  name                = "SQLgcFirewallRule1"
+  server_id           = azurerm_mssql_server.azsqlpaasetldbsrvr.id
+  start_ip_address    = "0.0.0.0"
+  end_ip_address      = "255.255.255.255"
+}
