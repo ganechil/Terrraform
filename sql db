@@ -1,0 +1,53 @@
+
+#config MS Azure Providers
+provider "azurerm" {
+  //configure terraform app registeration in azure 
+  #subscription_id = "098ae160-379b-4c33-93c3-c749b638d510"
+  #client_id       = "d1c8e5b9-7a0c-4f2e-9b3a-1c8e5b9a7c0d"
+  #clinet_secret = "your-client-secret" //terraform app registeration kye
+  #tenant_id       = "your-tenant-id" //tenant id
+  features {}
+}
+
+#create a resource group
+resource "azurerm_resource_group" "db-rg" {
+  location = "west us"
+  name     = "db-rg"
+}
+
+
+//Azure CLI commands to delete
+#az group delete --name adb-rg --yes --no-wait	
+
+//delete particular resource
+#az resource delete --resource-group "db-rg" --name "dbstrg" --resource-type "Microsoft.Compute/virtualMachines"
+
+
+//create a storage account
+resource "azurerm_storage_account" "dbstrggc" {
+  name                     = "dbstrggc"
+  resource_group_name      = azurerm_resource_group.db-rg.name
+  location                 = azurerm_resource_group.db-rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+//create azure sql server
+resource "azurerm_mssql_server" "azsqlpaasetldbsrvr" {
+  name                         = "azsqlpaasetldbsrvr"
+  resource_group_name          = azurerm_resource_group.db-rg.name
+  location                     = "West US"
+  version                      = "12.0"
+  administrator_login          = "etladmin"
+  administrator_login_password = "@Sdf123456"
+
+  tags = {
+    environment = "staging"
+  }
+}
+
+//create azure sql database
+  resource "azurerm_mssql_database" "etldb" {
+  name                = "etldb"
+  server_id           = azurerm_mssql_server.azsqlpaasetldbsrvr.id
+  }
