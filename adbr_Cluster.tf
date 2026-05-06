@@ -1,3 +1,5 @@
+//https://medium.com/@alonso.md/deploy-azure-databricks-using-terraform-6e8a39aa7287
+
 data "azurerm_client_config" "current" {}
 data "azuread_client_config" "current" {}
 data "azurerm_subscription" "primary" {}
