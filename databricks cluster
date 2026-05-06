@@ -1,0 +1,130 @@
+terraform {
+  required_providers {
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.0"
+    }
+  }
+}
+
+
+# # Create Key Vaults
+# resource "azurerm_key_vault" "adb_kv" {
+#   name                        = "adbrkv"
+#   location                    = azurerm_resource_group.adb-rg.location
+#   resource_group_name         = azurerm_resource_group.adb-rg.name
+#   tenant_id                   = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+#   sku_name                    = "standard"
+
+#   access_policy {
+#     tenant_id = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+#     object_id = "71c65564-1087-4eff-8848-ede060546b56"   # Service Principal or User Object ID
+#     secret_permissions = ["Get", "Set", "List"]
+#   }
+# }
+
+# # Create a secret in Key Vault
+# resource "azurerm_key_vault_secret" "databricks_client_secret" {
+#   name         = "databricks-client-pwd"
+#   value        = "databricks app registered secret"
+#   key_vault_id = azurerm_key_vault.adb_kv.id
+# }
+
+
+
+provider "databricks" {
+  azure_workspace_resource_id = azurerm_databricks_workspace.DatabricksWorkspace.id
+  azure_client_id       = "c7dbba87-cede-472c-b84a-f669309c248b"
+  azure_client_secret   = "databricks app registered key value"
+  azure_tenant_id       = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+
+}
+
+
+
+  
+#config MS Azure Providers
+provider "azurerm" {
+  //configure terraform app registeration in azure 
+  subscription_id = "098ae160-379b-4c33-93c3-c749b638d510"
+  client_id       = "c7dbba87-cede-472c-b84a-f669309c248b"
+  client_secret   = "app registered key secret" //databricks-access registerd in App Registeration
+  tenant_id       = "ce4c2cfb-13f3-4d1f-abc5-de58f4d808a4"
+  features {}
+}
+
+
+#create a resource group
+resource "azurerm_resource_group" "adb-rg" {
+  location = "west us 2"
+  name     = "adb-rg"
+}
+
+
+//authenticate databricks access with terraform
+#az ad sp create-for-rbac --role="contributor" --scopes="/subscriptions/098ae160-379b-4c33-93c3-c749b638d510"
+
+
+
+//create a storage account
+resource "azurerm_storage_account" "storageaccount" {
+  name                     = "adbrstrg"
+  resource_group_name      = azurerm_resource_group.adb-rg.name
+  location                 = azurerm_resource_group.adb-rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  depends_on               = [azurerm_resource_group.adb-rg]
+  tags = {
+    environment = "staging"
+  }
+}
+
+
+resource "azurerm_databricks_workspace" "DatabricksWorkspace" {
+  name                = "adb_wrkspc_gc"
+  resource_group_name = azurerm_resource_group.adb-rg.name
+  location            = azurerm_resource_group.adb-rg.location
+  sku                 = "premium"
+  depends_on          = [azurerm_storage_account.storageaccount]
+  tags = {
+    Environment = "staging"
+  }
+}
+
+
+resource "databricks_instance_pool" "instancepool" {
+  instance_pool_name = "Smallest Nodes Poold Instance"
+  min_idle_instances = 0 //min idle instances
+  max_capacity       = 300
+  node_type_id       = data.databricks_node_type.smallest_nodes.id
+  idle_instance_autotermination_minutes = 10 //idle instance auto termination time in minutes
+}
+
+
+//databricks workspace cluster resource
+data "databricks_node_type" "smallest_nodes" {
+  depends_on = [azurerm_databricks_workspace.DatabricksWorkspace]  
+  local_disk = true
+}
+
+data "databricks_spark_version" "latest_lts" {
+   depends_on = [azurerm_databricks_workspace.DatabricksWorkspace]
+  long_term_support = true
+}
+resource "databricks_cluster" "shared_autoscaling" {
+  depends_on             = [azurerm_databricks_workspace.DatabricksWorkspace]
+  instance_pool_id       = databricks_instance_pool.instancepool.id // instance pool id reference
+  cluster_name           = "Shared Autoscaling Clustered"
+  spark_version          = data.databricks_spark_version.latest_lts.id
+  #node_type_id           = data.databricks_node_type.smallest_nodes.id
+  autotermination_minutes = 20
+  autoscale {
+    min_workers = 1
+    max_workers = 20
+  }
+
+  spark_conf = {
+    "spark.databricks.io.cache.enabled" = "true"
+  }
+   data_security_mode = "SINGLE_USER"   # or USER_ISOLATION supports for Premium SKU and Unity Catalog features.
+}
