@@ -1,0 +1,93 @@
+# terraform {
+#   required_providers {
+#     azurerm = {
+#       source  = "hashicorp/azurerm"
+#       version = "3.72.0"
+#     }
+#   }
+# }
+
+# provider "azurerm" {
+#   features {}
+# }
+
+# Variables
+variable "envrnmt" {
+  type    = string
+  default = "UAT"
+}
+
+
+variable "location" {
+  type    = string
+  default = "East US 2"
+}
+
+variable "resource_group" {
+  type    = string
+  default = "rg-storage"
+}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group
+  location = var.location
+}
+
+# Input Storage Account
+resource "azurerm_storage_account" "inputstorage" {
+  name                     = "inputstorageacct01"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  is_hns_enabled           = true
+}
+
+# Output Storage Account
+resource "azurerm_storage_account" "outputstorage" {
+  name                     = "outputstorageacct01"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  is_hns_enabled           = true
+}
+
+# Containers in Input Storage
+resource "azurerm_storage_container" "ipbronze" {
+  name                  = "ipbronze"
+  storage_account_name  = azurerm_storage_account.inputstorage.name
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "ipsilver" {
+  name                  = "ipsilver"
+  storage_account_name  = azurerm_storage_account.inputstorage.name
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "ipgold" {
+  name                  = "ipgold"
+  storage_account_name  = azurerm_storage_account.inputstorage.name
+  container_access_type = "private"
+}
+
+# Containers in Output Storage
+resource "azurerm_storage_container" "opbronze" {
+  name                  = "opbronze"
+  storage_account_name  = azurerm_storage_account.outputstorage.name
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "opsilver" {
+  name                  = "opsilver"
+  storage_account_name  = azurerm_storage_account.outputstorage.name
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "opgold" {
+  name                  = "opgold"
+  storage_account_name  = azurerm_storage_account.outputstorage.name
+  container_access_type = "private"
+}
